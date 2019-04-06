@@ -95,7 +95,7 @@ type Headline struct {
 	Sub           interface{} `json:"sub"`
 }
 
-type Person struct {
+type DocPerson struct {
 	Firstname    string      `json:"firstname"`
 	Middlename   string      `json:"middlename"`
 	Lastname     string      `json:"lastname"`
@@ -108,7 +108,7 @@ type Person struct {
 
 type Byline struct {
 	Original     string      `json:"original"`
-	Person       []Person    `json:"person"`
+	Person       []DocPerson `json:"person"`
 	Organization interface{} `json:"organization"`
 }
 
