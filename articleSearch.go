@@ -34,12 +34,15 @@ const Oldest Sort = "oldest"
 const Relevance Sort = "relevance"
 
 type SearchArticlesRequest struct {
-	BeginDate   time.Time // 20060102
-	EndDate     time.Time // 20060102
-	Facet       bool
-	FacetFields FacetField
+	BeginDate time.Time // 20060102
+	EndDate   time.Time // 20060102
+	Facet     bool
+	// which facet fields to include
+	FacetFields []FacetField
+	// whether not to apply filter to facets
 	FacetFilter bool
-	FieldList   []string
+	// which fields to include for each document
+	FieldList []string
 	// Lucene syntax: http://www.lucenetutorial.com/lucene-query-syntax.html
 	FilterQuery string
 	// returns 10 results at a time, thus if response hits > 10, there are more pages
@@ -87,47 +90,54 @@ type Multimedia struct {
 
 type Headline struct {
 	Main          string      `json:"main"`
-	Kicker        interface{} `json:"kicker"`
-	ContentKicker interface{} `json:"content_kicker"`
-	PrintHeadline interface{} `json:"print_headline"`
+	Kicker        string      `json:"kicker"`
+	ContentKicker string      `json:"content_kicker"`
+	PrintHeadline string      `json:"print_headline"`
 	Name          string      `json:"name"`
 	Seo           interface{} `json:"seo"`
 	Sub           interface{} `json:"sub"`
 }
 
 type DocPerson struct {
-	Firstname    string      `json:"firstname"`
-	Middlename   string      `json:"middlename"`
-	Lastname     string      `json:"lastname"`
-	Qualifier    interface{} `json:"qualifier"`
-	Title        interface{} `json:"title"`
-	Role         string      `json:"role"`
-	Organization string      `json:"organization"`
-	Rank         int         `json:"rank"`
+	Firstname    string `json:"firstname"`
+	Middlename   string `json:"middlename"`
+	Lastname     string `json:"lastname"`
+	Qualifier    string `json:"qualifier"`
+	Title        string `json:"title"`
+	Role         string `json:"role"`
+	Organization string `json:"organization"`
+	Rank         int    `json:"rank"`
 }
 
 type Byline struct {
 	Original     string      `json:"original"`
 	Person       []DocPerson `json:"person"`
-	Organization interface{} `json:"organization"`
+	Organization string      `json:"organization"`
+}
+
+type Keyword struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+	Rank  int    `json:"rank"`
+	Major string `json:"major"`
 }
 
 type Doc struct {
-	WebURL         string        `json:"web_url"`
-	Snippet        string        `json:"snippet"`
-	LeadParagraph  string        `json:"lead_paragraph"`
-	Blog           Blog          `json:"blog"`
-	Source         string        `json:"source"`
-	Multimedia     []Multimedia  `json:"multimedia"`
-	Headline       Headline      `json:"headline"`
-	Keywords       []interface{} `json:"keywords"`
-	PubDate        string        `json:"pub_date"`
-	DocumentType   string        `json:"document_type"`
-	Byline         Byline        `json:"byline"`
-	TypeOfMaterial string        `json:"type_of_material"`
-	ID             string        `json:"_id"`
-	WordCount      int64         `json:"word_count"`
-	Score          float64       `json:"score"`
+	WebURL         string       `json:"web_url"`
+	Snippet        string       `json:"snippet"`
+	LeadParagraph  string       `json:"lead_paragraph"`
+	Blog           Blog         `json:"blog"`
+	Source         string       `json:"source"`
+	Multimedia     []Multimedia `json:"multimedia"`
+	Headline       Headline     `json:"headline"`
+	Keywords       []Keyword    `json:"keywords"`
+	PubDate        string       `json:"pub_date"`
+	DocumentType   string       `json:"document_type"`
+	Byline         Byline       `json:"byline"`
+	TypeOfMaterial string       `json:"type_of_material"`
+	ID             string       `json:"_id"`
+	WordCount      int64        `json:"word_count"`
+	Score          float64      `json:"score"`
 }
 
 type Terms struct {
@@ -159,7 +169,12 @@ func (c *Client) SearchArticles(request SearchArticlesRequest) (*SearchArticlesR
 	query.Add("end_date", request.EndDate.Format("20060102"))
 	query.Add("facet", strconv.FormatBool(request.Facet))
 	// todo investigate possible comma-separated list
-	query.Add("facet_fields", string(request.FacetFields))
+	// build facet fields
+	var facetFields []string
+	for _, f := range request.FacetFields {
+		facetFields = append(facetFields, string(f))
+	}
+	query.Add("facet_fields", strings.Join(facetFields, ","))
 	query.Add("facet_filter", strconv.FormatBool(request.FacetFilter))
 	query.Add("fl", strings.Join(request.FieldList, ","))
 	// todo possibly validate correct Lucene syntax
@@ -169,7 +184,6 @@ func (c *Client) SearchArticles(request SearchArticlesRequest) (*SearchArticlesR
 	u.RawQuery = query.Encode()
 
 	// execute the request
-	fmt.Println("url: ", u.String())
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	resp, err := (&http.Client{}).Do(req)
 	defer func() {
@@ -188,6 +202,8 @@ func (c *Client) SearchArticles(request SearchArticlesRequest) (*SearchArticlesR
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	fmt.Println(string(responseBytes))
 
 	return &response, nil
 }
