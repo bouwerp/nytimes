@@ -9,7 +9,7 @@ The state of the various NY times APIs that are available are:
 
 # Usage
 
-```$golang
+```go
 client := Client{
     Key: "<API_KEY>",
 }
